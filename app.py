@@ -3,14 +3,20 @@ import unicodedata
 import re
 import requests
 from typing import Dict, List, Tuple, Optional
-from fastapi import FastAPI, HTTPException
+
+from fastapi import FastAPI, HTTPException, Header, Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
+# -- CONFIG: pon aquí tu API Key (o léela de una variable de entorno) --
+API_KEY = os.getenv("OCNOS_API_KEY", "05709f74a605acc0e9c481b60a23913ff748620a")
+
+def verify_api_key(x_api_key: str = Header(...)):
+    if x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+
 # URL pública del JSON en GitHub
-GIST_URL = (
-    "https://raw.githubusercontent.com/sebastianmiras/ocnos-googlecloud/main/articulo.json"
-)
+GIST_URL = "https://raw.githubusercontent.com/sebastianmiras/ocnos-googlecloud/main/articulo.json"
 
 # Modelos de petición
 class MetadataRequest(BaseModel):
@@ -41,7 +47,6 @@ def strip_accents(s: str) -> str:
     ).lower()
 
 def normalize_text(s: str) -> str:
-    """Quita tildes, pasa a minúsculas y reemplaza no alfanuméricos por espacios."""
     no_acc = strip_accents(s)
     cleaned = re.sub(r'[^a-z0-9]+', ' ', no_acc)
     return cleaned.strip()
@@ -77,12 +82,20 @@ def find_article(query: str, db: Dict[str, Dict]) -> Tuple[Optional[str], Option
             return slug, art
     return None, None
 
-@app.get("/list_articles", summary="Listar títulos de artículos disponibles")
+@app.get(
+    "/list_articles",
+    summary="Listar títulos de artículos disponibles",
+    dependencies=[Depends(verify_api_key)]
+)
 def list_articles():
     db = load_articles_from_gist()
     return [{"id": slug, "title": art.get("title")} for slug, art in db.items()]
 
-@app.post("/get_metadata", summary="Obtener datos bibliográficos del artículo")
+@app.post(
+    "/get_metadata",
+    summary="Obtener datos bibliográficos del artículo",
+    dependencies=[Depends(verify_api_key)]
+)
 def get_metadata(req: MetadataRequest):
     db = load_articles_from_gist()
     slug, art = find_article(req.article_query, db)
@@ -97,7 +110,11 @@ def get_metadata(req: MetadataRequest):
         "keywords": art.get("keywords"),
     }
 
-@app.post("/get_section", summary="Recuperar párrafos de una sección")
+@app.post(
+    "/get_section",
+    summary="Recuperar párrafos de una sección",
+    dependencies=[Depends(verify_api_key)]
+)
 def get_section(req: SectionRequest):
     db = load_articles_from_gist()
     slug, art = find_article(req.article_query, db)
