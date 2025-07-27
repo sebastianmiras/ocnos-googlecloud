@@ -1,0 +1,25 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Distribution artifacts
+build/
+dist/
+*.egg-info/
+
+# Virtual envs
+venv/
+env/
+.venv/
+.env/
+
+# Git metadata
+.git
+.gitignore
+
+# IDEA / VSCode
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
