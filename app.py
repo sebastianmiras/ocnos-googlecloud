@@ -8,13 +8,6 @@ from fastapi import FastAPI, HTTPException, Header, Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
-# -- CONFIG: pon aquí tu API Key (o léela de una variable de entorno) --
-API_KEY = os.getenv("OCNOS_API_KEY", "05709f74a605acc0e9c481b60a23913ff748620a")
-
-def verify_api_key(x_api_key: str = Header(...)):
-    if x_api_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid API Key")
-
 # URL pública del JSON en GitHub
 GIST_URL = "https://raw.githubusercontent.com/sebastianmiras/ocnos-googlecloud/main/articulo.json"
 
