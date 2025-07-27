@@ -3,13 +3,14 @@ import unicodedata
 import re
 import requests
 from typing import Dict, List, Tuple, Optional
-
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 
 # URL pública del JSON en GitHub
-GIST_URL = "https://raw.githubusercontent.com/sebastianmiras/ocnos-googlecloud/main/articulo.json"
+GIST_URL = (
+    "https://raw.githubusercontent.com/sebastianmiras/ocnos-googlecloud/main/articulo.json"
+)
 
 # Modelos de petición
 class MetadataRequest(BaseModel):
@@ -40,6 +41,7 @@ def strip_accents(s: str) -> str:
     ).lower()
 
 def normalize_text(s: str) -> str:
+    """Quita tildes, pasa a minúsculas y reemplaza no alfanuméricos por espacios."""
     no_acc = strip_accents(s)
     cleaned = re.sub(r'[^a-z0-9]+', ' ', no_acc)
     return cleaned.strip()
@@ -75,20 +77,12 @@ def find_article(query: str, db: Dict[str, Dict]) -> Tuple[Optional[str], Option
             return slug, art
     return None, None
 
-@app.get(
-    "/list_articles",
-    summary="Listar títulos de artículos disponibles",
-    dependencies=[Depends(verify_api_key)]
-)
+@app.get("/list_articles", summary="Listar títulos de artículos disponibles")
 def list_articles():
     db = load_articles_from_gist()
     return [{"id": slug, "title": art.get("title")} for slug, art in db.items()]
 
-@app.post(
-    "/get_metadata",
-    summary="Obtener datos bibliográficos del artículo",
-    dependencies=[Depends(verify_api_key)]
-)
+@app.post("/get_metadata", summary="Obtener datos bibliográficos del artículo")
 def get_metadata(req: MetadataRequest):
     db = load_articles_from_gist()
     slug, art = find_article(req.article_query, db)
@@ -103,11 +97,7 @@ def get_metadata(req: MetadataRequest):
         "keywords": art.get("keywords"),
     }
 
-@app.post(
-    "/get_section",
-    summary="Recuperar párrafos de una sección",
-    dependencies=[Depends(verify_api_key)]
-)
+@app.post("/get_section", summary="Recuperar párrafos de una sección")
 def get_section(req: SectionRequest):
     db = load_articles_from_gist()
     slug, art = find_article(req.article_query, db)
